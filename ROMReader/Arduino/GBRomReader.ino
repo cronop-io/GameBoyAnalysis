@@ -1,3 +1,4 @@
+// Pin mappings
 #define GAMEBOY_RD 25
 #define GAMEBOY_A00 27
 #define GAMEBOY_A02 29
@@ -25,74 +26,84 @@
 #define GAMEBOY_D05 46
 #define GAMEBOY_D07 48
 
+// Address pins
+const static uint32_t ADDRESS_PINS[16] = 
+{
+    GAMEBOY_A00,
+    GAMEBOY_A01,
+    GAMEBOY_A02,
+    GAMEBOY_A03,
+    GAMEBOY_A04,
+    GAMEBOY_A05,
+    GAMEBOY_A06,
+    GAMEBOY_A07,
+    GAMEBOY_A08,
+    GAMEBOY_A09,
+    GAMEBOY_A10,
+    GAMEBOY_A11,
+    GAMEBOY_A12,
+    GAMEBOY_A13,
+    GAMEBOY_A14,
+    GAMEBOY_A15
+};
+
+// Data pins
+const static uint32_t DATA_PINS[8] = 
+{
+    GAMEBOY_D00,
+    GAMEBOY_D01,
+    GAMEBOY_D02,
+    GAMEBOY_D03,
+    GAMEBOY_D04,
+    GAMEBOY_D05,
+    GAMEBOY_D06,
+    GAMEBOY_D07
+};
+
 #define BANK_SWITCH_ADDRESS 0x2100
+
+#define SERIAL_BAUD_RATE 115200
 
 void setup() 
 {
+    // Read/Write pin as outputs by default
     pinMode(GAMEBOY_WT, OUTPUT);
     pinMode(GAMEBOY_RD, OUTPUT);
 
-    pinMode(GAMEBOY_A00, OUTPUT);
-    pinMode(GAMEBOY_A02, OUTPUT);
-    pinMode(GAMEBOY_A04, OUTPUT);
-    pinMode(GAMEBOY_A06, OUTPUT);
-    pinMode(GAMEBOY_A08, OUTPUT);
-    pinMode(GAMEBOY_A10, OUTPUT);
-    pinMode(GAMEBOY_A12, OUTPUT);
-    pinMode(GAMEBOY_A14, OUTPUT);
-    pinMode(GAMEBOY_A01, OUTPUT);
-    pinMode(GAMEBOY_A03, OUTPUT);
-    pinMode(GAMEBOY_A05, OUTPUT);
-    pinMode(GAMEBOY_A07, OUTPUT);
-    pinMode(GAMEBOY_A09, OUTPUT);
-    pinMode(GAMEBOY_A11, OUTPUT);
-    pinMode(GAMEBOY_A13, OUTPUT);
-    pinMode(GAMEBOY_A15, OUTPUT);
+    // Address pins as outputs
+    for (uint32_t i = 0; i < sizeof(ADDRESS_PINS)/sizeof(ADDRESS_PINS[0]); i++)
+    {
+        pinMode(ADDRESS_PINS[i], OUTPUT);
+    }
 
-    pinMode(GAMEBOY_D00, INPUT);
-    pinMode(GAMEBOY_D02, INPUT);
-    pinMode(GAMEBOY_D04, INPUT);
-    pinMode(GAMEBOY_D06, INPUT);
-    pinMode(GAMEBOY_D01, INPUT);
-    pinMode(GAMEBOY_D03, INPUT);
-    pinMode(GAMEBOY_D05, INPUT);
-    pinMode(GAMEBOY_D07, INPUT);
+    // Data pins as inputs
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        pinMode(DATA_PINS[i], INPUT);
+    }
 
-    Serial.begin(115200);
-
+    // Start serial connection to host
+    Serial.begin(SERIAL_BAUD_RATE);
 }
 
 void writeAddress(uint16_t address)
 {
-    digitalWrite(GAMEBOY_A00, address & (1 << 0) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A01, address & (1 << 1) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A02, address & (1 << 2) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A03, address & (1 << 3) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A04, address & (1 << 4) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A05, address & (1 << 5) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A06, address & (1 << 6) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A07, address & (1 << 7) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A08, address & (1 << 8) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A09, address & (1 << 9) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A10, address & (1 << 10) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A11, address & (1 << 11) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A12, address & (1 << 12) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A13, address & (1 << 13) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A14, address & (1 << 14) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_A15, address & (1 << 15) ? HIGH : LOW);
+    // Write each of the bits into the address pins
+    for (uint32_t i = 0; i < sizeof(ADDRESS_PINS)/sizeof(ADDRESS_PINS[0]); i++)
+    {
+        digitalWrite(ADDRESS_PINS[i], address & (1 << i) ? HIGH : LOW);
+    }
 }
 
 uint8_t readData()
 {
     uint8_t data = 0;
-    data |= digitalRead(GAMEBOY_D00) << 0;
-    data |= digitalRead(GAMEBOY_D01) << 1;
-    data |= digitalRead(GAMEBOY_D02) << 2;
-    data |= digitalRead(GAMEBOY_D03) << 3;
-    data |= digitalRead(GAMEBOY_D04) << 4;
-    data |= digitalRead(GAMEBOY_D05) << 5;
-    data |= digitalRead(GAMEBOY_D06) << 6;
-    data |= digitalRead(GAMEBOY_D07) << 7;
+
+    // Read each of the data pins and construct the byte data
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        data |= digitalRead(DATA_PINS[i]) << i;
+    }
 
     return data;
 }
@@ -104,14 +115,10 @@ void selectBank(uint32_t bank)
     digitalWrite(GAMEBOY_WT, LOW);
 
     // Change the pin typing
-    pinMode(GAMEBOY_D00, OUTPUT);
-    pinMode(GAMEBOY_D01, OUTPUT);
-    pinMode(GAMEBOY_D02, OUTPUT);
-    pinMode(GAMEBOY_D03, OUTPUT);
-    pinMode(GAMEBOY_D04, OUTPUT);
-    pinMode(GAMEBOY_D05, OUTPUT);
-    pinMode(GAMEBOY_D06, OUTPUT);
-    pinMode(GAMEBOY_D07, OUTPUT);
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        pinMode(DATA_PINS[i], OUTPUT);
+    }
 
     // Write the bank address 
     writeAddress(BANK_SWITCH_ADDRESS);
@@ -119,14 +126,10 @@ void selectBank(uint32_t bank)
     delay(5);
 
     // Write the bank to switch to
-    digitalWrite(GAMEBOY_D00, bank & (1 << 0) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D01, bank & (1 << 1) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D02, bank & (1 << 2) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D03, bank & (1 << 3) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D04, bank & (1 << 4) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D05, bank & (1 << 5) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D06, bank & (1 << 6) ? HIGH : LOW);
-    digitalWrite(GAMEBOY_D07, bank & (1 << 7) ? HIGH : LOW);
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        digitalWrite(DATA_PINS[i], bank & (1 << i) ? HIGH : LOW);
+    }
 
     delay(5);
 
@@ -134,24 +137,16 @@ void selectBank(uint32_t bank)
     digitalWrite(GAMEBOY_WT, HIGH);
 
     // Set the data to LOW
-    digitalWrite(GAMEBOY_D00, LOW);
-    digitalWrite(GAMEBOY_D01, LOW);
-    digitalWrite(GAMEBOY_D02, LOW);
-    digitalWrite(GAMEBOY_D03, LOW);
-    digitalWrite(GAMEBOY_D04, LOW);
-    digitalWrite(GAMEBOY_D05, LOW);
-    digitalWrite(GAMEBOY_D06, LOW);
-    digitalWrite(GAMEBOY_D07, LOW);
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        digitalWrite(DATA_PINS[i], LOW);
+    }
 
     // Set pins back as inputs
-    pinMode(GAMEBOY_D00, INPUT);
-    pinMode(GAMEBOY_D01, INPUT);
-    pinMode(GAMEBOY_D02, INPUT);
-    pinMode(GAMEBOY_D03, INPUT);
-    pinMode(GAMEBOY_D04, INPUT);
-    pinMode(GAMEBOY_D05, INPUT);
-    pinMode(GAMEBOY_D06, INPUT);
-    pinMode(GAMEBOY_D07, INPUT);
+    for (uint32_t i = 0; i < sizeof(DATA_PINS)/sizeof(DATA_PINS[0]); i++)
+    {
+        pinMode(DATA_PINS[i], INPUT);
+    }
 
     delay(5);
 }
